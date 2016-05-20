@@ -1,0 +1,19 @@
+@import url(https://fonts.googleapis.com/css?family=Lato:400,700);
+
+body {
+    font-family: Lato;
+    font-weight: 400;
+    text-align: center;
+}
+
+form {
+    margin-top: 100px;
+}
+
+h1 {
+    font-weight: 700;
+}
+
+h1, h2 {
+    margin-top: 50px;
+}
