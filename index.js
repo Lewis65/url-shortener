@@ -25,7 +25,7 @@ app.get('/', function(req, res){
 //index form handler
 app.post('/', function(req, res){
     //set url entered to the value of the text field
-    var urlEntered = $("#urlbox").cont();
+    var urlEntered = $("#urlbox").val();
     //if it is a valid url, check for an existing short code
     //CHECK THIS METHOD AND MONGO CODE
     if(url.isValid(urlEntered)){
