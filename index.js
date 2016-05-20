@@ -27,6 +27,7 @@ app.post('/', function(req, res){
     //set url entered to the value of the text field
     var urlEntered = $("#urlbox").cont();
     //if it is a valid url, check for an existing short code
+    //CHECK THIS METHOD AND MONGO CODE
     if(url.isValid(urlEntered)){
         //check if there is a shortcode for this url already
         //not scalable? 1 in 61^8 chance of duplicate seems fine
@@ -69,7 +70,6 @@ app.post('/', function(req, res){
                 })
             })
         }
-
     } else {
         res.render('index', {output: "Invalid url."})
     }
@@ -78,12 +78,20 @@ app.post('/', function(req, res){
 
 //when you get a short code
 app.get('/:query', function(req, res){
+    var codeQuery = req.params.query;
     mongo.connect(process.env.MONGOLAB_URI, function(err, db){
         if(err) throw err;
-        var collection = db.collection('urls');
-        var code = req.params.query;
         //find the code in collection
+        var urlFound = db.collection('urls').find({
+            code: +codeQuery
+        })
         //redirect to matching url
+        if(urlFound){
+            res.redirect(urlFound.url)
+        } else {
+            res.render('index', {output: "Code not found."})
+        }
+        res.end();
     })
 })
 
