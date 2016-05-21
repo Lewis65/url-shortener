@@ -69,31 +69,36 @@ app.post('/', function(req, res){
     var urlEntered = req.body.urlbox;
     //DEBUG
     console.log("Url entered was " + urlEntered);
+    var shortCode, thisEntry;
     //if it is a valid url, check for an existing short code
     if(isUrl(urlEntered)){
         //check if there is a shortcode for this url already
         //not scalable? 1 in 61^8 chance of duplicate seems fine
-        var shortCode;
         mongo.connect(mongoURI, function(err, db){
             //DEBUG
-            console.log("Connected to MongoDB.")
+            console.log("Connected to MongoDB at line 77")
             if (err) throw err;
-            shortCode = db.collection('urls').find({
+            thisEntry = db.collection('urls').find({
                 "url": urlEntered
-            })
+            });
+            shortCode = thisEntry.code;
         })
         //if not, create one
         function newCodePair(url){
+            //DEBUG
+            console.log("called newCodePair(" + url + ")")
             var tempCode = newShortCode(regex);
             var codeFound = false;
             mongo.connect(mongoURI, function(err, db){
+                //DEBUG
+                console.log("Connected to MongoDB at line 92");
                 if (err) throw err;
                 //look for the proposed code in the db
                 codeFound = db.collection('urls').find({
                     "code": tempCode
-                })
+                }).size;
                 if(codeFound){
-                    //if code is in use, generate a new one with recursion
+                    //if code is in use in db, generate a new one with recursion
                     //(bad idea with async callbacks, no?)
                     //DEBUG
                     console.log(tempCode + " is in use. Trying again...")
@@ -113,6 +118,8 @@ app.post('/', function(req, res){
             shortCode = newCodePair(urlEntered);
         } else {
             mongo.connect(mongoURI, function(err, db){
+                //DEBUG
+                console.log("Connected to MongoDB at line 117");
                 if (err) throw err;
                 db.collection('urls').insert({
                     url: +urlEntered,
