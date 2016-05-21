@@ -25,15 +25,7 @@ app.use(express.static(__dirname + '/public'));
 app.get('/', function(req, res){
     //DEBUG
     console.log("Received GET for index =================================");
-    res.render('index', {output: ""});
-    //DEBUG
-    mongo.connect(mongoURI, function(err, db){
-        console.log("Mongo connected from index debug")
-        if (err) throw err;
-        var docs = db.collection('urls').find({"url": "http://www.example.com"}).toArray(function(err, results){
-            console.log(results);
-        });
-    })
+    res.render('index', {output: "Please enter a full URL (including 'http://')"});
     res.end();
 });
 
@@ -139,20 +131,25 @@ app.post('/', function(req, res){
 //when you get a short code
 app.get('/:query', function(req, res){
     var codeQuery = req.params.query;
+    console.log("codeQuery = " + codeQuery);
     mongo.connect(mongoURI, function(err, db){
         if(err) throw err;
         //find the code in collection
-        var urlFound = db.collection('urls').find({
-            code: +codeQuery
-        })
-        //redirect to matching url
-        if(urlFound){
-            res.redirect(urlFound.url)
-        } else {
-            res.render('index', {output: "Code not found."})
-        }
-        res.end();
-    })
-})
+        var findMatch = db.collection('urls').find({
+            "code": codeQuery
+        }).toArray(function(err, results){
+            //redirect to matching url
+            console.log(results);
+            if(results.length > 0){
+                console.log("Redirecting")
+                res.redirect(results[0].url)
+            } else {
+                console.log("No results for " + codeQuery);
+                res.render('index', {output: "Error: Shortcode not found"})
+                res.end();
+            }
+        });
+    });
+});
 
 app.listen(process.env.PORT || 8080);
