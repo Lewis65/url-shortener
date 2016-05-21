@@ -4,7 +4,7 @@ var app = express();
 var favicon = require('serve-favicon');
 var randexp = require('randexp');
 var regex = /[\d\w]{8}/;
-var url = require('url');
+var isUrl = require('is-url');
 var bodyParser = require('body-parser');
 var $ = require('jquery')(require('jsdom').jsdom().defaultView);
 
@@ -22,13 +22,15 @@ app.get('/', function(req, res){
     res.end();
 });
 
-//index form handler
+//send a POST from submit button
+$("#")
+
+//index form POST
 app.post('/', function(req, res){
     //set url entered to the value of the text field
     var urlEntered = $("#urlbox").val();
     //if it is a valid url, check for an existing short code
-    //CHECK THIS METHOD AND MONGO CODE
-    if(url.isValid(urlEntered)){
+    if(isUrl(urlEntered)){
         //check if there is a shortcode for this url already
         //not scalable? 1 in 61^8 chance of duplicate seems fine
         var shortCode;
@@ -87,7 +89,7 @@ app.get('/:query', function(req, res){
         })
         //redirect to matching url
         if(urlFound){
-            res.redirect(urlFound.url)
+            res.redirect(urlFound[0].url)
         } else {
             res.render('index', {output: "Code not found."})
         }
