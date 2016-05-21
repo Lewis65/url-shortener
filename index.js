@@ -3,6 +3,7 @@ var mongo = require('mongodb').MongoClient,
     mongoURI = "mongodb://user:password@ds025232.mlab.com:25232/url-shortener";
 var express = require('express'),
     app = express();
+var url = require('url');
 //Stupid favicon
 var favicon = require('serve-favicon');
 //Form validation and posting and such
@@ -25,38 +26,16 @@ app.get('/', function(req, res){
     //DEBUG
     console.log("Received GET for index =================================");
     res.render('index', {output: ""});
+    //DEBUG
+    mongo.connect(mongoURI, function(err, db){
+        console.log("Mongo connected from index debug")
+        if (err) throw err;
+        var docs = db.collection('urls').find({"url": "http://www.example.com"}).toArray(function(err, results){
+            console.log(results);
+        });
+    })
     res.end();
 });
-
-//send a POST from submit button
-/*
-$(function(){
-    $("#btnSubmit").on("click", function(event){
-        event.preventDefault;
-        //DEBUG
-        console.log("Attempting POST for " + $("#urlbox").val());
-        $.ajax({
-            type: "POST",
-            data: $("#urlbox").val(),
-            url: "/",
-            dataType: "json",
-        }).done(function(response){
-            //DEBUG
-            console.log("POST was successful");
-            console.log(response);
-            if(response.message === ""){
-                app.render("index", {
-                    output: response.code
-                });
-            } else {
-                app.render("index", {
-                    output: "Error with POST response: " + response.message
-                });
-            }
-        });
-    });
-});
-*/
 
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -73,74 +52,88 @@ app.post('/', function(req, res){
     //if it is a valid url, check for an existing short code
     if(isUrl(urlEntered)){
         //check if there is a shortcode for this url already
-        //not scalable? 1 in 61^8 chance of duplicate seems fine
         mongo.connect(mongoURI, function(err, db){
             //DEBUG
             console.log("Connected to MongoDB at line 77")
             if (err) throw err;
-            thisEntry = db.collection('urls').find({
+            db.collection('urls').find({
                 "url": urlEntered
+            }).toArray(function(err, results){
+                thisEntry = results;
+                //DEBUG
+                console.log("Returned document(s):");
+                console.log(thisEntry);
+                if(thisEntry.length === 0){
+                    newCodePair(urlEntered);
+                } else {
+                    shortCode = thisEntry[0].code;
+                    checkPair(shortCode);
+                }
             });
-            shortCode = thisEntry.code;
-            checkPair();
         })
         //if not, create one
         function newCodePair(url){
             //DEBUG
             console.log("called newCodePair(" + url + ")")
             var tempCode = newShortCode(regex);
-            var codeFound = false;
+            var codeFound;
             mongo.connect(mongoURI, function(err, db){
                 //DEBUG
-                console.log("Connected to MongoDB at line 93");
+                console.log("Connected to MongoDB at line 80");
                 if (err) throw err;
                 //look for the proposed code in the db
                 codeFound = db.collection('urls').find({
                     "code": tempCode
-                }).size;
-                if(codeFound){
-                    //if code is in use in db, generate a new one with recursion
-                    //(bad idea with async callbacks, no?)
-                    //DEBUG
-                    console.log(tempCode + " is in use. Trying again...")
-                    newCodePair(url);
-                } else {
-                    //DEBUG
-                    console.log(codeFound + " not found in ")
-                    //if not in use, return the unused code
-                    shortCode = tempCode;
-                    checkPair();
-                }
+                }).toArray(function(err, results){
+                    if(results.length > 0){
+                        //if code is in use in db, generate a new one with recursion
+                        //(bad idea with async callbacks, no?)
+                        //DEBUG
+                        console.log(tempCode + " is in use. Trying again...")
+                        newCodePair(url);
+                    } else {
+                        //DEBUG
+                        console.log(tempCode + " not found in use in db")
+                        mongo.connect(mongoURI, function(err, db){
+                            shortCode = tempCode;
+                            db.collection('urls').insert({
+                                "url": urlEntered,
+                                "code": shortCode
+                            });
+                            pairCreated();
+                        })
+                    }
+                });
             })
         }
-        function checkPair(){
+        function checkPair(currentCode){
             //DEBUG
-            console.log("Called checkPair() with the shortCode " + shortCode);
-            if(!shortCode){
-                //DEBUG
-                console.log("Found no shortcode assigned to url " + urlEntered);
-                //if shortCode isn't assigned yet, generate a new one
-                shortCode = newCodePair(urlEntered);
-            } else {
-                mongo.connect(mongoURI, function(err, db){
-                    //DEBUG
-                    console.log("Connected to MongoDB at line 125");
-                    if (err) throw err;
-                    db.collection('urls').insert({
-                        "url": urlEntered,
-                        "code": shortCode
-                    }).done(
-                        //DEBUG
-                        console.log("Inserted document: url: " + urlEntered + "code: " + shortCode)
-                    )
-                })
-            }
+            console.log("Called checkPair() with the shortCode " + currentCode);
+            //DEBUG
+            console.log("Found pair for url " + urlEntered + " - " + currentCode);
+            res.render("index", {output:
+                "Success! " + urlEntered + " already has the shortened URL <a href='" + getShort(currentCode) + "'>" + getShort(currentCode) + "</a>"
+            })
+            res.end();
+        }
+        function pairCreated(){
+            //DEBUG
+            console.log("Inserted document: url: " + urlEntered + "code: " + shortCode);
+            res.render("index", {
+                output: "Success! URL " + urlEntered + " is now reachable via " +
+                "<a href='#'>" + getShort(shortCode) + "</a>"
+                }
+            );
+            res.end();
+        }
+        function getShort(codePassed){
+            return req.protocol + "://" + req.get("host") + "/" + codePassed;
         }
     } else {
         //not a valid url
-        res.render('index', {output: "Invalid url."})
+        res.render('index', {output: "Invalid url."});
+        res.end();
     }
-    res.end();
 })
 
 //when you get a short code
