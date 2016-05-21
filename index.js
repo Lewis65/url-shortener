@@ -82,6 +82,7 @@ app.post('/', function(req, res){
                 "url": urlEntered
             });
             shortCode = thisEntry.code;
+            checkPair();
         })
         //if not, create one
         function newCodePair(url){
@@ -91,7 +92,7 @@ app.post('/', function(req, res){
             var codeFound = false;
             mongo.connect(mongoURI, function(err, db){
                 //DEBUG
-                console.log("Connected to MongoDB at line 92");
+                console.log("Connected to MongoDB at line 93");
                 if (err) throw err;
                 //look for the proposed code in the db
                 codeFound = db.collection('urls').find({
@@ -105,29 +106,38 @@ app.post('/', function(req, res){
                     newCodePair(url);
                 } else {
                     //DEBUG
-                    console.log(codeFound + "not found in ")
+                    console.log(codeFound + " not found in ")
                     //if not in use, return the unused code
-                    return tempCode;
+                    shortCode = tempCode;
+                    checkPair();
                 }
             })
         }
-        if(!shortCode){
+        function checkPair(){
             //DEBUG
-            console.log("Found no shortcode assigned to url " + urlEntered);
-            //if shortCode isn't assigned yet, generate a new one
-            shortCode = newCodePair(urlEntered);
-        } else {
-            mongo.connect(mongoURI, function(err, db){
+            console.log("Called checkPair() with the shortCode " + shortCode);
+            if(!shortCode){
                 //DEBUG
-                console.log("Connected to MongoDB at line 117");
-                if (err) throw err;
-                db.collection('urls').insert({
-                    url: +urlEntered,
-                    code: +shortCode
+                console.log("Found no shortcode assigned to url " + urlEntered);
+                //if shortCode isn't assigned yet, generate a new one
+                shortCode = newCodePair(urlEntered);
+            } else {
+                mongo.connect(mongoURI, function(err, db){
+                    //DEBUG
+                    console.log("Connected to MongoDB at line 125");
+                    if (err) throw err;
+                    db.collection('urls').insert({
+                        "url": urlEntered,
+                        "code": shortCode
+                    }).done(
+                        //DEBUG
+                        console.log("Inserted document: url: " + urlEntered + "code: " + shortCode)
+                    )
                 })
-            })
+            }
         }
     } else {
+        //not a valid url
         res.render('index', {output: "Invalid url."})
     }
     res.end();
