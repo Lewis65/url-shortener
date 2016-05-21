@@ -1,0 +1,32 @@
+{
+  "name": "lh65-url-shortener",
+  "version": "1.0.0",
+  "description": "A URL shortener built with Node, Express and MongoDB for FreeCodeCamp's back-end API projects.",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.15.1",
+    "ejs": "^2.4.1",
+    "mongodb": "^2.1.19",
+    "is-url": "^1.2.1",
+    "serve-favicon": "^2.3.0",
+    "randexp": "^0.4.2",
+    "express": "^4.13.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lewis65/url-shortener.git"
+  },
+  "keywords": [
+    "freecodecamp"
+  ],
+  "author": "Lewis Horwood @lewiebot",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lewis65/url-shortener/issues"
+  },
+  "homepage": "https://github.com/Lewis65/url-shortener#readme"
+}
